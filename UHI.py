@@ -74,7 +74,7 @@ rgba_raster_image = cmap(norm_matrix)
 
 # 6. Generate Reference Color Bar for Sidebar
 st.sidebar.write("---")
-st.sidebar.subheader("🌡️ Color Reference Bar (°C)")
+st.sidebar.subheader("  Color Reference Bar (°C)")
 
 fig, ax = plt.subplots(figsize=(6, 1))
 fig.subplots_adjust(bottom=0.5)
