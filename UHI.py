@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 import folium
-from folium.plugins import ImageOverlay
+from folium.raster_layers import ImageOverlay  # FIXED: Correct import path for ImageOverlay
 from streamlit_folium import st_folium
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 # 1. Page Configuration
 st.set_page_config(page_title="Global 100x100 UHI Grid Simulator", layout="wide")
 
-st.title(" Global High-Resolution UHI Grid Simulator (100 × 100)")
+st.title("🛰️ Global High-Resolution UHI Grid Simulator (100 × 100)")
 st.write("Simulate micro-climate environments globally with an ultra-dense, 10,000-cell continuous square raster framework.")
 
 # Initialize Geocoder
 geolocator = Nominatim(user_agent="uhi_highres_raster_2026")
 
 # 2. Control Panel (Sidebar with Numeric Inputs)
-st.sidebar.header(" Simulation Parameters")
+st.sidebar.header("🛠️ Simulation Parameters")
 st.sidebar.subheader("Location Settings")
 city_name = st.sidebar.text_input("Type City Name", value="Dhaka")
 
@@ -27,7 +27,7 @@ try:
     if location:
         detected_lat = location.latitude
         detected_lon = location.longitude
-        st.sidebar.success(f" Found: {location.address.split(',')[0]} ({detected_lat:.4f}, {detected_lon:.4f})")
+        st.sidebar.success(f"📍 Found: {location.address.split(',')[0]} ({detected_lat:.4f}, {detected_lon:.4f})")
     else:
         st.sidebar.error("City not found. Defaulting to Dhaka coordinates.")
         detected_lat, detected_lon = 23.8103, 90.4125
@@ -50,25 +50,23 @@ temperature_reduction = (ndvi_change * BETA_NDVI) + (albedo_change * BETA_ALBEDO
 current_avg_temp = base_temp + temperature_reduction
 
 # 4. High-Resolution 100x100 Matrix Engine
-grid_res = 100  # Scaled up to 100x100 grid (10,000 data points)
+grid_res = 100  # 100x100 grid (10,000 data points)
 lat_span = 0.06
 lon_span = 0.06
 
 # Defining spatial matrix boundaries
-lat_min, lat_max = detected_lat - lat_span/2, detected_lat + lat_span/2
-lon_min, lon_max = detected_lon - lon_span/2, detected_lon + lon_span/2
+lat_min, lat_max = float(detected_lat - lat_span/2), float(detected_lat + lat_span/2)
+lon_min, lon_max = float(detected_lon - lon_span/2), float(detected_lon + lon_span/2)
 
 np.random.seed(42)
-# Generate random spatial variance structure matching urban density distributions
 spatial_noise = np.random.normal(0, 1.8, (grid_res, grid_res))
 simulated_lst_matrix = np.full((grid_res, grid_res), current_avg_temp) + spatial_noise
 
 # 5. Native Color Mapping Array Conversion
-# Normalize cell array to map cleanly into standard colormap spaces
 cmap = plt.get_cmap('RdYlBu_r')
 norm_matrix = (simulated_lst_matrix - 15) / (45 - 15)  # Scale between LST values 15°C and 45°C
-norm_matrix = np.clip(norm_matrix, 0, 1)               # Bound safety clips
-rgba_raster_image = cmap(norm_matrix)                  # Generate genuine RGBA pixel map array
+norm_matrix = np.clip(norm_matrix, 0, 1)               
+rgba_raster_image = cmap(norm_matrix)                  
 
 # 6. Main Dashboard Layout
 col1, col2 = st.columns([1, 3])
@@ -86,15 +84,14 @@ with col1:
         f"Increasing vegetation by **{ndvi_change:.2f} NDVI** and enhancing surface albedo by **{albedo_change:.2f}** "
         f"is modeled to reduce the average surface temperature by **{abs(temperature_reduction):.2f}°C**."
     )
-    st.caption(" *The simulation renders a 100×100 grid overlaying micro-climate thermal zones onto your selected urban region.*")
+    st.caption("ℹ️ *The simulation renders a 100×100 grid overlaying micro-climate thermal zones onto your selected urban region.*")
 
 with col2:
     # 7. Initialize Folium Map
     m = folium.Map(location=[detected_lat, detected_lon], zoom_start=12, tiles="OpenStreetMap")
     
     # 8. High-Performance Continuous Raster Image Overlay
-    # Renders the 10,000 pixel bounding grid with exactly 50% transparency seamlessly
-    img = ImageOverlay(
+    ImageOverlay(
         image=rgba_raster_image,
         bounds=[[lat_min, lon_min], [lat_max, lon_max]],
         opacity=0.5,                  # Exact 50% continuous matrix grid transparency
