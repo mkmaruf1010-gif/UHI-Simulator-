@@ -1,23 +1,24 @@
 import streamlit as st
 import numpy as np
 import folium
-from folium.raster_layers import ImageOverlay  # FIXED: Correct import path for ImageOverlay
+from folium.raster_layers import ImageOverlay
 from streamlit_folium import st_folium
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 # 1. Page Configuration
 st.set_page_config(page_title="Global 100x100 UHI Grid Simulator", layout="wide")
 
-st.title("🛰️ Global High-Resolution UHI Grid Simulator (100 × 100)")
+st.title("  Global High-Resolution UHI Grid Simulator ")
 st.write("Simulate micro-climate environments globally with an ultra-dense, 10,000-cell continuous square raster framework.")
 
 # Initialize Geocoder
 geolocator = Nominatim(user_agent="uhi_highres_raster_2026")
 
 # 2. Control Panel (Sidebar with Numeric Inputs)
-st.sidebar.header("🛠️ Simulation Parameters")
+st.sidebar.header("  Simulation Parameters")
 st.sidebar.subheader("Location Settings")
 city_name = st.sidebar.text_input("Type City Name", value="Dhaka")
 
@@ -27,7 +28,7 @@ try:
     if location:
         detected_lat = location.latitude
         detected_lon = location.longitude
-        st.sidebar.success(f"📍 Found: {location.address.split(',')[0]} ({detected_lat:.4f}, {detected_lon:.4f})")
+        st.sidebar.success(f"  Found: {location.address.split(',')[0]} ({detected_lat:.4f}, {detected_lon:.4f})")
     else:
         st.sidebar.error("City not found. Defaulting to Dhaka coordinates.")
         detected_lat, detected_lon = 23.8103, 90.4125
@@ -63,12 +64,36 @@ spatial_noise = np.random.normal(0, 1.8, (grid_res, grid_res))
 simulated_lst_matrix = np.full((grid_res, grid_res), current_avg_temp) + spatial_noise
 
 # 5. Native Color Mapping Array Conversion
+min_display_temp = 15.0
+max_display_temp = 45.0
+
 cmap = plt.get_cmap('RdYlBu_r')
-norm_matrix = (simulated_lst_matrix - 15) / (45 - 15)  # Scale between LST values 15°C and 45°C
+norm_matrix = (simulated_lst_matrix - min_display_temp) / (max_display_temp - min_display_temp) 
 norm_matrix = np.clip(norm_matrix, 0, 1)               
 rgba_raster_image = cmap(norm_matrix)                  
 
-# 6. Main Dashboard Layout
+# 6. Generate Reference Color Bar for Sidebar
+st.sidebar.write("---")
+st.sidebar.subheader("🌡️ Color Reference Bar (°C)")
+
+fig, ax = plt.subplots(figsize=(6, 1))
+fig.subplots_adjust(bottom=0.5)
+norm_legend = mcolors.Normalize(vmin=min_display_temp, vmax=max_display_temp)
+cb = fig.colorbar(
+    plt.cm.ScalarMappable(norm=norm_legend, cmap=cmap),
+    cax=ax, 
+    orientation='horizontal',
+    label='Land Surface Temperature (LST) in °C'
+)
+# Style color bar text to fit sidebar cleanly
+ax.xaxis.label.set_size(10)
+ax.tick_params(labelsize=9)
+
+# Display the generated color bar directly inside the sidebar
+st.sidebar.pyplot(fig)
+plt.close(fig)  # Clear plot memory allocation
+
+# 7. Main Dashboard Layout
 col1, col2 = st.columns([1, 3])
 
 with col1:
@@ -87,10 +112,10 @@ with col1:
     st.caption("ℹ️ *The simulation renders a 100×100 grid overlaying micro-climate thermal zones onto your selected urban region.*")
 
 with col2:
-    # 7. Initialize Folium Map
+    # 8. Initialize Folium Map
     m = folium.Map(location=[detected_lat, detected_lon], zoom_start=12, tiles="OpenStreetMap")
     
-    # 8. High-Performance Continuous Raster Image Overlay
+    # 9. High-Performance Continuous Raster Image Overlay
     ImageOverlay(
         image=rgba_raster_image,
         bounds=[[lat_min, lon_min], [lat_max, lon_max]],
