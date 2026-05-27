@@ -50,7 +50,7 @@ temperature_reduction = (ndvi_change * BETA_NDVI) + (albedo_change * BETA_ALBEDO
 current_avg_temp = base_temp + temperature_reduction
 
 # 4. Generate Square Raster Grid Cells
-grid_res = 20  # 20x20 Grid creates 400 clean square raster cells
+grid_res = 1000  # 100x100 Grid creates 10000 clean square raster cells
 lat_span = 0.06
 lon_span = 0.06
 
