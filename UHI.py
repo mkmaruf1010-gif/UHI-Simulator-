@@ -109,7 +109,8 @@ with col1:
         f"Increasing vegetation by **{ndvi_change:.2f} NDVI** and enhancing surface albedo by **{albedo_change:.2f}** "
         f"is modeled to reduce the average surface temperature by **{abs(temperature_reduction):.2f}°C**."
     )
-    st.caption("ℹ️ *The simulation renders a 100×100 grid overlaying micro-climate thermal zones onto your selected urban region.*")
+    st.caption("ℹ️ *The simulation renders a 100×100 grid overlaying micro-climate thermal zones onto your selected urban region. lat_span = 0.06 &
+lon_span = 0.06 ")
 
 with col2:
     # 8. Initialize Folium Map
