@@ -12,7 +12,7 @@ import matplotlib.colors as mcolors
 st.set_page_config(page_title="Global 100x100 UHI Grid Simulator", layout="wide")
 
 st.title("  Global High-Resolution UHI Grid Simulator ")
-st.write("Simulate micro-climate environments globally with an ultra-dense, 10,000-cell continuous square raster framework.")
+st.write(" Simulate micro-climate environments globally with an ultra-dense, 10,000-cell continuous square raster framework.")
 
 # Initialize Geocoder
 geolocator = Nominatim(user_agent="uhi_highres_raster_2026")
