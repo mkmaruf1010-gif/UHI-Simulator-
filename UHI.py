@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 # 1. Page Configuration
 st.set_page_config(page_title="Global 100x100 UHI Grid Simulator", layout="wide")
 
-st.title(" Global High-Resolution UHI Grid Simulator ")
+st.title("🛰️ Global High-Resolution UHI Grid Simulator (100 × 100)")
 st.write("Simulate micro-climate environments globally with an ultra-dense, 10,000-cell continuous square raster framework.")
 
 # Initialize Geocoder
 geolocator = Nominatim(user_agent="uhi_highres_raster_2026")
 
 # 2. Control Panel (Sidebar with Numeric Inputs)
-st.sidebar.header(" Simulation Parameters")
+st.sidebar.header("🛠️ Simulation Parameters")
 st.sidebar.subheader("Location Settings")
 city_name = st.sidebar.text_input("Type City Name", value="Dhaka")
 
@@ -27,7 +27,7 @@ try:
     if location:
         detected_lat = location.latitude
         detected_lon = location.longitude
-        st.sidebar.success(f" Found: {location.address.split(',')[0]} ({detected_lat:.4f}, {detected_lon:.4f})")
+        st.sidebar.success(f"📍 Found: {location.address.split(',')[0]} ({detected_lat:.4f}, {detected_lon:.4f})")
     else:
         st.sidebar.error("City not found. Defaulting to Dhaka coordinates.")
         detected_lat, detected_lon = 23.8103, 90.4125
@@ -84,7 +84,7 @@ with col1:
         f"Increasing vegetation by **{ndvi_change:.2f} NDVI** and enhancing surface albedo by **{albedo_change:.2f}** "
         f"is modeled to reduce the average surface temperature by **{abs(temperature_reduction):.2f}°C**."
     )
-    st.caption("  *The simulation renders a 100×100 grid overlaying micro-climate thermal zones onto your selected urban region.*")
+    st.caption("ℹ️ *The simulation renders a 100×100 grid overlaying micro-climate thermal zones onto your selected urban region.*")
 
 with col2:
     # 7. Initialize Folium Map
