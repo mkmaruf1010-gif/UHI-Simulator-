@@ -1,7 +1,6 @@
-streamlit==1.38.0
-earthengine-api>=0.1.418
-geemap==0.32.0
-python-box==6.1.0
+streamlit
+earthengine-api
+geemap
 pandas
 streamlit-folium
 matplotlib
