@@ -52,11 +52,11 @@ else:
     st.sidebar.markdown("Enter Custom Coordinates:")
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        min_lon = st.number_input("Min Longitude", value=90.30)
-        min_lat = st.number_input("Min Latitude", value=23.70)
+        min_lon = st.number_input("Min Longitude", value=88)
+        min_lat = st.number_input("Min Latitude", value=20.5)
     with col2:
-        max_lon = st.number_input("Max Longitude", value=90.55)
-        max_lat = st.number_input("Max Latitude", value=23.90)
+        max_lon = st.number_input("Max Longitude", value=93)
+        max_lat = st.number_input("Max Latitude", value=26.7)
     
     aoi = ee.Geometry.Polygon([[[min_lon, min_lat], [max_lon, min_lat], [max_lon, max_lat], [min_lon, max_lat]]])
     center_lat, center_lon = (min_lat + max_lat) / 2, (min_lon + max_lon) / 2
