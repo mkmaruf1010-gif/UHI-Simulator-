@@ -32,8 +32,34 @@ start_date = st.sidebar.date_input("Start Date", value=pd.to_datetime("2025-08-2
 end_date = st.sidebar.date_input("End Date", value=pd.to_datetime("2025-09-30"))
 cloud_max = st.sidebar.slider("Max Cloud Cover (%)", 0, 50, 50)
 
-# Define AOI for Dhaka
-aoi = ee.Geometry.Polygon([[[90.30, 23.70], [90.55, 23.70], [90.55, 23.90], [90.30, 23.90]]])
+# --- USER SELECTABLE POLYGON / AREA OF INTEREST ---
+st.sidebar.subheader("Area of Interest (AOI)")
+area_option = st.sidebar.selectbox(
+    "Select Study Region", 
+    ["Dhaka Core", "Uttara / North Dhaka", "Motijheel / South Dhaka", "Custom Bounding Box"]
+)
+
+if area_option == "Dhaka Core":
+    aoi = ee.Geometry.Polygon([[[90.35, 23.70], [90.48, 23.70], [90.48, 23.85], [90.35, 23.85]]])
+    center_lat, center_lon = 23.775, 4125
+elif area_option == "Uttara / North Dhaka":
+    aoi = ee.Geometry.Polygon([[[90.38, 23.83], [90.44, 23.83], [90.44, 23.90], [90.38, 23.90]]])
+    center_lat, center_lon = 23.86, 90.41
+elif area_option == "Motijheel / South Dhaka":
+    aoi = ee.Geometry.Polygon([[[90.40, 23.71], [90.46, 23.71], [90.46, 23.77], [90.40, 23.77]]])
+    center_lat, center_lon = 23.74, 90.43
+else:
+    st.sidebar.markdown("Enter Custom Coordinates:")
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        min_lon = st.number_input("Min Longitude", value=90.30)
+        min_lat = st.number_input("Min Latitude", value=23.70)
+    with col2:
+        max_lon = st.number_input("Max Longitude", value=90.55)
+        max_lat = st.number_input("Max Latitude", value=23.90)
+    
+    aoi = ee.Geometry.Polygon([[[min_lon, min_lat], [max_lon, min_lat], [max_lon, max_lat], [min_lon, max_lat]]])
+    center_lat, center_lon = (min_lat + max_lat) / 2, (min_lon + max_lon) / 2
 
 # Use Session State to preserve the map across reruns
 if "run_analysis" not in st.session_state:
@@ -57,7 +83,7 @@ if st.session_state.run_analysis:
                 )
                 
                 if collection.size().getInfo() == 0:
-                    st.warning("No Landsat images found for this date range and cloud filter.")
+                    st.warning("No Landsat images found for this date range and cloud filter. Try increasing the cloud cover limit.")
                 else:
                     img = collection.mosaic().clip(aoi)
                     optical = img.select(['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7']).multiply(0.0000275).add(-0.2)
@@ -106,7 +132,6 @@ if st.session_state.run_analysis:
                     st.success("Analysis complete using MODIS daily data!")
                     
             folium.LayerControl().add_to(m)
-            # Prevent interaction reruns from wiping out the map display
             st_folium(m, width="100%", height=500, returned_objects=[])
             
         except Exception as e:
