@@ -12,7 +12,9 @@ st.set_page_config(page_title="Live UHI & Albedo Simulator", layout="wide")
 def initialize_gee():
     credentials = ee.ServiceAccountCredentials(
         st.secrets["gee"]["fieldmapping@fieldmapping-507507.iam.gserviceaccount.com"], 
-        key_data=st.secrets["gee"]["MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC+5su/HJ7aY4Kl
+        key_data=st.secrets["gee"]["""
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC+5su/HJ7aY4Kl
 JfxvzESry9SjsbYFp5q7JNgMbQaNQ9QxbQo68zq/63lkS9TVBE4Mzew4yp7OZSxf
 1sJZM+5VF+j1rqQbKA2s6rDQ0RzYtDdnfZDHx9qz5CZPGVbvQHNGj4YsZ48EtVRm
 Dn5z7PqDp+iefjg4W9veE2Qf8f9x2eCw+kYiYaIuXdAY+2oKPORobDtEnVlr5ZcP
@@ -37,7 +39,9 @@ iKmnbRK1M4sxRJNRzOX4mRKZadj7h6wYZ7GkjSwU/0Jgcb9irO4pALivUt+7jXnT
 f3S6h1pSgELBSxvrZk0SsUxqME5iedoOXDPhBxxxAoGBAKwDfacgj/nblvXspTyD
 nnOVneITTLkfJgOTgLT0b/xECi7BJW+0egvJjtcJWRniJn2RRswmwy/OzSERmvs6
 S3vCfn7Lt59In/X7fx3KK+3vS/sonOwE7VF9qPnom0ico/wSKsuPh5w4ghS6toae
-+9IQEJIF6qqsvKJNqQxGSdvK"]
++9IQEJIF6qqsvKJNqQxGSdvK
+-----END PRIVATE KEY-----
+"""]
     )
     ee.Initialize(credentials)
 
