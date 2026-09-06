@@ -151,7 +151,7 @@ if st.session_state.run_analysis:
                     st.success("Analysis complete using Sentinel-1 SAR Backscatter!")
                     
             folium.LayerControl().add_to(m)
-            st_folium(m, width="100%", height=500, returned_objects=[])
+            st_folium(m, width="100%", height=700, returned_objects=[])
             
         except Exception as e:
             st.error(f"An error occurred during GEE processing: {e}")
