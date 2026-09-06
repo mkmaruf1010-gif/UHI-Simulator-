@@ -1,6 +1,7 @@
 streamlit
 earthengine-api
 geemap
+python-box==6.0.2
 pandas
 streamlit-folium
 matplotlib
