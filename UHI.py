@@ -6,7 +6,7 @@ import pandas as pd
 from datetime import date, timedelta
 
 # Page setup
-st.set_page_config(page_title="Live UHI, Albedo & SAR Monitor", layout="wide")
+st.set_page_config(page_title="Dynamic Urban Heat Island Monitor", layout="wide")
 
 # Initialize Google Earth Engine securely
 @st.cache_resource
@@ -23,14 +23,14 @@ def initialize_gee():
 
 initialize_gee()
 
-st.title("Dynamic Urban Heat Island, Albedo & SAR Monitor")
-st.markdown("Monitor live surface temperature, surface albedo, and radar backscatter using Landsat 8/9, MODIS, and Sentinel-1 SAR for any custom date range and custom bounding box.")
+st.title("Dynamic Urban Heat Island Monitor")
+st.markdown("Monitor live Urban Heat Island using Landsat 8/9, MODIS, and Sentinel-1 SAR for any custom date range .")
 
 # Sidebar controls
 st.sidebar.header("Parameters")
 sensor = st.sidebar.selectbox(
     "Select Sensor", 
-    ["Landsat 8/9 (30m)", "MODIS Daily (1km)", "Sentinel-1 SAR (10m Backscatter)"]
+    [ "MODIS Daily (1km)","Landsat 8/9 (30m)", "Sentinel-1 SAR (10m Backscatter)"]
 )
 
 # Fully flexible, dynamic date pickers defaulting to recent data
