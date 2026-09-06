@@ -149,8 +149,7 @@ if st.session_state.run_analysis:
                         overlay=True,
                         control=True
                     ).add_to(m)
-                    st.success("Analysis complete using MODIS daily data!")
-                    
+                    st.success("Analysis complete using MODIS daily data!")        
            else:  # Sentinel-1 SAR Integration
                 s1_collection = (
                     ee.ImageCollection("COPERNICUS/S1_GRD")
