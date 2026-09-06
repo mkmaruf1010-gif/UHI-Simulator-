@@ -10,11 +10,15 @@ st.set_page_config(page_title="Live UHI & Albedo Simulator", layout="wide")
 # Initialize Google Earth Engine securely
 @st.cache_resource
 def initialize_gee():
-    credentials = ee.ServiceAccountCredentials(
-        st.secrets["gee"]["client_email"], 
-        key_data=st.secrets["gee"]["private_key"]
-    )
-    ee.Initialize(credentials)
+    try:
+        credentials = ee.ServiceAccountCredentials(
+            st.secrets["gee"]["client_email"], 
+            key_data=st.secrets["gee"]["private_key"]
+        )
+        ee.Initialize(credentials)
+    except Exception:
+        ee.Authenticate()
+        ee.Initialize()
 
 initialize_gee()
 
@@ -24,17 +28,23 @@ st.markdown("Monitor live surface temperature and surface albedo via Google Eart
 # Sidebar controls
 st.sidebar.header("Parameters")
 sensor = st.sidebar.selectbox("Select Sensor", ["Landsat 8/9 (30m)", "MODIS Daily (1km)"])
-start_date = st.sidebar.date_input("Start Date", value=pd.to_datetime("2026-01-01"))
-end_date = st.sidebar.date_input("End Date", value=pd.to_datetime("2026-09-01"))
-cloud_max = st.sidebar.slider("Max Cloud Cover (%)", 0, 50, 15)
+start_date = st.sidebar.date_input("Start Date", value=pd.to_datetime("2025-08-25"))
+end_date = st.sidebar.date_input("End Date", value=pd.to_datetime("2025-09-30"))
+cloud_max = st.sidebar.slider("Max Cloud Cover (%)", 0, 50, 50)
 
 # Define AOI for Dhaka
 aoi = ee.Geometry.Polygon([[[90.30, 23.70], [90.55, 23.70], [90.55, 23.90], [90.30, 23.90]]])
 
+# Use Session State to preserve the map across reruns
+if "run_analysis" not in st.session_state:
+    st.session_state.run_analysis = False
+
 if st.button("Run Live GEE Analysis"):
+    st.session_state.run_analysis = True
+
+if st.session_state.run_analysis:
     with st.spinner("Processing satellite bands on Google servers..."):
         try:
-            # Base Folium Map centered on Dhaka
             m = folium.Map(location=[23.8103, 90.4125], zoom_start=11, tiles="CartoDB positron")
             
             if "Landsat" in sensor:
@@ -46,9 +56,8 @@ if st.button("Run Live GEE Analysis"):
                     .filter(ee.Filter.lt('CLOUD_COVER', cloud_max))
                 )
                 
-                # Check if images exist before processing
                 if collection.size().getInfo() == 0:
-                    st.warning("No Landsat images found for this date range and cloud filter. Try increasing 'Max Cloud Cover (%)' to 20% or higher.")
+                    st.warning("No Landsat images found for this date range and cloud filter.")
                 else:
                     img = collection.mosaic().clip(aoi)
                     optical = img.select(['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7']).multiply(0.0000275).add(-0.2)
@@ -97,7 +106,8 @@ if st.button("Run Live GEE Analysis"):
                     st.success("Analysis complete using MODIS daily data!")
                     
             folium.LayerControl().add_to(m)
-            st_folium(m, width="100%", height=500)
+            # Prevent interaction reruns from wiping out the map display
+            st_folium(m, width="100%", height=500, returned_objects=[])
             
         except Exception as e:
             st.error(f"An error occurred during GEE processing: {e}")
