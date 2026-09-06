@@ -1,6 +1,7 @@
 streamlit
-numpy
-folium
+earthengine-api
+geemap
+pandas
 streamlit-folium
-geopy
 matplotlib
+numpy
