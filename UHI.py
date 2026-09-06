@@ -1,128 +1,71 @@
 import streamlit as st
-import numpy as np
-import folium
-from folium.raster_layers import ImageOverlay
-from streamlit_folium import st_folium
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
+import ee
+import geemap.foliumap as geemap
+import pandas as pd
 
-# 1. Page Configuration
-st.set_page_config(page_title="Global 100x100 UHI Grid Simulator", layout="wide")
+st.set_page_config(page_title="Live UHI & Albedo Simulator", layout="wide")
 
-st.title("  Global High-Resolution UHI Grid Simulator ")
-st.write(" Simulate micro-climate environments globally with an ultra-dense, 10,000-cell continuous square raster framework.")
+@st.cache_resource
+def initialize_gee():
+    try:
+        ee.Initialize()
+    except Exception:
+        ee.Authenticate()
+        ee.Initialize()
 
-# Initialize Geocoder
-geolocator = Nominatim(user_agent="uhi_highres_raster_2026")
+initialize_gee()
 
-# 2. Control Panel (Sidebar with Numeric Inputs)
-st.sidebar.header("  Simulation Parameters")
-st.sidebar.subheader("Location Settings")
-city_name = st.sidebar.text_input("Type City Name", value="Dhaka")
+st.title("Dynamic Urban Heat Island & Albedo Monitor")
+st.markdown("Monitor live surface temperature and surface albedo via Google Earth Engine and Landsat 8/9.")
 
-# Geocoding Logic
-try:
-    location = geolocator.geocode(city_name)
-    if location:
-        detected_lat = location.latitude
-        detected_lon = location.longitude
-        st.sidebar.success(f"  Found: {location.address.split(',')[0]} ({detected_lat:.4f}, {detected_lon:.4f})")
-    else:
-        st.sidebar.error("City not found. Defaulting to Dhaka coordinates.")
-        detected_lat, detected_lon = 23.8103, 90.4125
-except GeocoderTimedOut:
-    st.sidebar.error("Geocoding service timed out. Using default coordinates.")
-    detected_lat, detected_lon = 23.8103, 90.4125
+st.sidebar.header("Parameters")
+sensor = st.sidebar.selectbox("Select Sensor", ["Landsat 8/9 (30m)", "MODIS Daily (1km)"])
+start_date = st.sidebar.date_input("Start Date", value=pd.to_datetime("2026-01-01"))
+end_date = st.sidebar.date_input("End Date", value=pd.to_datetime("2026-09-01"))
+cloud_max = st.sidebar.slider("Max Cloud Cover (%)", 0, 50, 15)
 
-base_temp = st.sidebar.number_input("Baseline Average Temperature (°C)", min_value=0.0, max_value=60.0, value=36.5, step=0.1)
+aoi = ee.Geometry.Polygon([[[90.30, 23.70], [90.55, 23.70], [90.55, 23.90], [90.30, 23.90]]])
 
-# Mitigation Variables
-st.sidebar.subheader("Mitigation Variables (Input Changes)")
-ndvi_change = st.sidebar.number_input("Increase in Vegetation Index (Δ NDVI)", min_value=0.00, max_value=1.00, value=0.05, step=0.01, format="%.2f")
-albedo_change = st.sidebar.number_input("Increase in Surface Albedo (Δ Albedo)", min_value=0.00, max_value=1.00, value=0.10, step=0.01, format="%.2f")
-
-# 3. Scientific Mathematical Engine
-BETA_NDVI = -5.42  
-BETA_ALBEDO = -3.55  
-
-temperature_reduction = (ndvi_change * BETA_NDVI) + (albedo_change * BETA_ALBEDO)
-current_avg_temp = base_temp + temperature_reduction
-
-# 4. High-Resolution 100x100 Matrix Engine
-grid_res = 100  # 100x100 grid (10,000 data points)
-lat_span = 0.06
-lon_span = 0.06
-
-# Defining spatial matrix boundaries
-lat_min, lat_max = float(detected_lat - lat_span/2), float(detected_lat + lat_span/2)
-lon_min, lon_max = float(detected_lon - lon_span/2), float(detected_lon + lon_span/2)
-
-np.random.seed(42)
-spatial_noise = np.random.normal(0, 1.8, (grid_res, grid_res))
-simulated_lst_matrix = np.full((grid_res, grid_res), current_avg_temp) + spatial_noise
-
-# 5. Native Color Mapping Array Conversion
-min_display_temp = 15.0
-max_display_temp = 45.0
-
-cmap = plt.get_cmap('RdYlBu_r')
-norm_matrix = (simulated_lst_matrix - min_display_temp) / (max_display_temp - min_display_temp) 
-norm_matrix = np.clip(norm_matrix, 0, 1)               
-rgba_raster_image = cmap(norm_matrix)                  
-
-# 6. Generate Reference Color Bar for Sidebar
-st.sidebar.write("---")
-st.sidebar.subheader("  Color Reference Bar (°C)")
-
-fig, ax = plt.subplots(figsize=(6, 1))
-fig.subplots_adjust(bottom=0.5)
-norm_legend = mcolors.Normalize(vmin=min_display_temp, vmax=max_display_temp)
-cb = fig.colorbar(
-    plt.cm.ScalarMappable(norm=norm_legend, cmap=cmap),
-    cax=ax, 
-    orientation='horizontal',
-    label='Land Surface Temperature (LST) in °C'
-)
-# Style color bar text to fit sidebar cleanly
-ax.xaxis.label.set_size(10)
-ax.tick_params(labelsize=9)
-
-# Display the generated color bar directly inside the sidebar
-st.sidebar.pyplot(fig)
-plt.close(fig)  # Clear plot memory allocation
-
-# 7. Main Dashboard Layout
-col1, col2 = st.columns([1, 3])
-
-with col1:
-    st.subheader("Key Metrics")
-    st.metric(
-        label="Simulated Avg Temperature", 
-        value=f"{current_avg_temp:.2f} °C", 
-        delta=f"{temperature_reduction:.2f} °C" if temperature_reduction != 0 else None
-    )
-    st.write("---")
-    st.info(
-        f"**Scenario Summary for {city_name}:**\n\n"
-        f"Increasing vegetation by **{ndvi_change:.2f} NDVI** and enhancing surface albedo by **{albedo_change:.2f}** "
-        f"is modeled to reduce the average surface temperature by **{abs(temperature_reduction):.2f}°C**."
-    )
-    st.caption("ℹ️ *The simulation renders a 100×100 grid overlaying micro-climate thermal zones onto your selected urban region.* ")
-
-with col2:
-    # 8. Initialize Folium Map
-    m = folium.Map(location=[detected_lat, detected_lon], zoom_start=12, tiles="OpenStreetMap")
-    
-    # 9. High-Performance Continuous Raster Image Overlay
-    ImageOverlay(
-        image=rgba_raster_image,
-        bounds=[[lat_min, lon_min], [lat_max, lon_max]],
-        opacity=0.5,                  # Exact 50% continuous matrix grid transparency
-        pixelated=True,               # Forces crisp, clean, independent raster square cells
-        name="100x100 Simulated UHI Grid"
-    ).add_to(m)
-    
-    # Render interactive map component on the dashboard
-    st_folium(m, width=900, height=600, returned_objects=[])
+if st.button("Run Live GEE Analysis"):
+    with st.spinner("Processing satellite bands on Google servers..."):
+        
+        if "Landsat" in sensor:
+            collection = (
+                ee.ImageCollection("LANDSAT/LC08/C02/T1_L2")
+                .merge(ee.ImageCollection("LANDSAT/LC09/C02/T1_L2"))
+                .filterBounds(aoi)
+                .filterDate(str(start_date), str(end_date))
+                .filter(ee.Filter.lt('CLOUD_COVER', cloud_max))
+            )
+            
+            img = collection.mosaic().clip(aoi)
+            optical = img.select(['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7']).multiply(0.0000275).add(-0.2)
+            thermal = img.select(['ST_B10']).multiply(0.00341802).add(149.0)
+            
+            albedo = (
+                optical.select('SR_B2').multiply(0.356)
+                .add(optical.select('SR_B4').multiply(0.130))
+                .add(optical.select('SR_B5').multiply(0.373))
+                .add(optical.select('SR_B6').multiply(0.085))
+                .add(optical.select('SR_B7').multiply(0.072))
+                .subtract(0.0018)
+                .rename('Albedo')
+            )
+            
+            lst_c = thermal.subtract(273.15).rename('LST_Celsius')
+            
+            m = geemap.Map(center=[23.8103, 90.4125], zoom=11)
+            m.addLayer(lst_c, {'min': 25, 'max': 45, 'palette': ['blue', 'cyan', 'green', 'yellow', 'red']}, 'Land Surface Temperature (°C)')
+            m.addLayer(albedo, {'min': 0.05, 'max': 0.35, 'palette': ['black', 'gray', 'white']}, 'Surface Albedo')
+            
+            m.to_streamlit(height=500)
+            st.success("Analysis complete using Landsat 8/9!")
+            
+        else:
+            modis = ee.ImageCollection("MODIS/061/MOD11A1").filterDate(str(start_date), str(end_date)).select('LST_Day_1km').mosaic().clip(aoi)
+            modis_c = modis.multiply(0.02).subtract(273.15).rename('MODIS_LST')
+            
+            m = geemap.Map(center=[23.8103, 90.4125], zoom=10)
+            m.addLayer(modis_c, {'min': 25, 'max': 45, 'palette': ['blue', 'yellow', 'red']}, 'MODIS LST (°C)')
+            m.to_streamlit(height=500)
+            st.success("Analysis complete using MODIS daily data!")
