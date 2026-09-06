@@ -151,7 +151,7 @@ if st.session_state.run_analysis:
                     ).add_to(m)
                     st.success("Analysis complete using MODIS daily data!")
                     
-            else:  # Sentinel-1 SAR Integration
+           else:  # Sentinel-1 SAR Integration
                 s1_collection = (
                     ee.ImageCollection("COPERNICUS/S1_GRD")
                     .filterBounds(aoi)
@@ -169,12 +169,13 @@ if st.session_state.run_analysis:
                     st.session_state.processed_image = s1_img
                     st.session_state.download_filename = "Sentinel1_VV_Custom_AOI.tif"
                     
-                  # মাল্টি-কালার বা রেইনবো প্যালেট উদাহরণ:
-s1_id = s1_img.getMapId({
-    'min': -25, 
-    'max': 0, 
-    'palette': ['blue', 'cyan', 'green', 'yellow', 'red']
-})
+                    # মাল্টি-কালার বা রেইনবো প্যালেট প্রয়োগ করা হলো
+                    s1_id = s1_img.getMapId({
+                        'min': -25, 
+                        'max': 0, 
+                        'palette': ['blue', 'cyan', 'green', 'yellow', 'red']
+                    })
+                    
                     folium.raster_layers.TileLayer(
                         tiles=s1_id['tile_fetcher'].url_format,
                         attr='Google Earth Engine',
