@@ -4,6 +4,10 @@ import folium
 from streamlit_folium import st_folium
 import pandas as pd
 from datetime import date, timedelta
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import base64
+from io import BytesIO
 
 # Page setup
 st.set_page_config(page_title="Dynamic Urban Heat Island Monitor", layout="wide")
@@ -94,10 +98,42 @@ if "download_filename" not in st.session_state:
 if st.button("Run Live GEE Analysis"):
     st.session_state.run_analysis = True
 
+# Helper function to generate a Matplotlib color bar legend as HTML/Image
+def get_legend_html(palette, vmin, vmax, label):
+    fig, ax = plt.subplots(figsize=(4, 0.4))
+    fig.subplots_adjust(bottom=0.5)
+    
+    cmap = mcolors.LinearSegmentedColormap.from_list("", palette)
+    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    
+    cb = plt.colorbar(
+        plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=ax,
+        orientation="horizontal"
+    )
+    cb.set_label(label, fontsize=9, color='black')
+    cb.ax.tick_params(labelsize=8)
+    
+    buf = BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight", transparent=True)
+    plt.close(fig)
+    buf.seek(0)
+    
+    encoded = base64.b64encode(buf.read()).decode("utf-8")
+    html = f"""
+    <div style="background-color: rgba(255, 255, 255, 0.85); padding: 10px; border-radius: 8px; border: 1px solid #ccc; width: fit-content; margin-top: 10px;">
+        <b>Legend Scale ({label})</b><br>
+        <img src="data:image/png;base64,{encoded}" style="width: 250px;">
+    </div>
+    """
+    return html
+
 if st.session_state.run_analysis:
     with st.spinner("Processing satellite bands on Google servers..."):
         try:
             m = folium.Map(location=map_location, zoom_start=zoom_level, tiles="CartoDB positron")
+            
+            legend_html = ""
             
             if "Landsat" in sensor:
                 collection = (
@@ -119,7 +155,8 @@ if st.session_state.run_analysis:
                     st.session_state.processed_image = lst_c
                     st.session_state.download_filename = "Landsat_LST_Custom_AOI.tif"
                     
-                    lst_id = lst_c.getMapId({'min': 25, 'max': 45, 'palette': ['blue', 'cyan', 'green', 'yellow', 'red']})
+                    palette_colors = ['blue', 'cyan', 'green', 'yellow', 'red']
+                    lst_id = lst_c.getMapId({'min': 25, 'max': 45, 'palette': palette_colors})
                     folium.raster_layers.TileLayer(
                         tiles=lst_id['tile_fetcher'].url_format,
                         attr='Google Earth Engine',
@@ -127,6 +164,8 @@ if st.session_state.run_analysis:
                         overlay=True,
                         control=True
                     ).add_to(m)
+                    
+                    legend_html = get_legend_html(palette_colors, 25, 45, "Land Surface Temperature (°C)")
                     st.success("Analysis complete using Landsat 8/9!")
                 
             elif "MODIS" in sensor:
@@ -141,7 +180,8 @@ if st.session_state.run_analysis:
                     st.session_state.processed_image = modis_c
                     st.session_state.download_filename = "MODIS_LST_Custom_AOI.tif"
                     
-                    modis_id = modis_c.getMapId({'min': 25, 'max': 45, 'palette': ['blue', 'yellow', 'red']})
+                    palette_colors = ['blue', 'yellow', 'red']
+                    modis_id = modis_c.getMapId({'min': 25, 'max': 45, 'palette': palette_colors})
                     folium.raster_layers.TileLayer(
                         tiles=modis_id['tile_fetcher'].url_format,
                         attr='Google Earth Engine',
@@ -149,6 +189,8 @@ if st.session_state.run_analysis:
                         overlay=True,
                         control=True
                     ).add_to(m)
+                    
+                    legend_html = get_legend_html(palette_colors, 25, 45, "MODIS LST (°C)")
                     st.success("Analysis complete using MODIS daily data!")        
             else:  # Sentinel-1 SAR Integration
                 s1_collection = (
@@ -168,24 +210,30 @@ if st.session_state.run_analysis:
                     st.session_state.processed_image = s1_img
                     st.session_state.download_filename = "Sentinel1_VV_Custom_AOI.tif"
                     
-                    # মাল্টি-কালার বা রেইনবো প্যালেট প্রয়োগ করা হলো
+                    palette_colors = ['blue', 'cyan', 'green', 'yellow', 'red']
                     s1_id = s1_img.getMapId({
                         'min': -25, 
                         'max': 0, 
-                        'palette': ['blue', 'cyan', 'green', 'yellow', 'red']
+                        'palette': palette_colors
                     })
                     
                     folium.raster_layers.TileLayer(
                         tiles=s1_id['tile_fetcher'].url_format,
-                        attr='Google Earth Engine',
+                        attr='Google EarthEngine',
                         name='Sentinel-1 VV Backscatter (dB)',
                         overlay=True,
                         control=True
                     ).add_to(m)
+                    
+                    legend_html = get_legend_html(palette_colors, -25, 0, "Sentinel-1 VV Backscatter (dB)")
                     st.success("Analysis complete using Sentinel-1 SAR Backscatter!")
                     
             folium.LayerControl().add_to(m)
             st_folium(m, width="100%", height=500, returned_objects=[])
+            
+            # Display Legend on Streamlit app
+            if legend_html:
+                st.markdown(legend_html, unsafe_allow_html=True)
             
         except Exception as e:
             st.error(f"An error occurred during GEE processing: {e}")
@@ -202,7 +250,7 @@ if st.session_state.processed_image is not None:
                 if "Landsat" in sensor:
                     scale_val = 30
                 elif "MODIS" in sensor:
-                    scale_val = 1000
+                    scale_val= 1000
                 else:
                     scale_val = 10
                 
