@@ -169,7 +169,12 @@ if st.session_state.run_analysis:
                     st.session_state.processed_image = s1_img
                     st.session_state.download_filename = "Sentinel1_VV_Custom_AOI.tif"
                     
-                    s1_id = s1_img.getMapId({'min': -25, 'max': 0, 'palette': ['black', 'gray', 'white']})
+                  # মাল্টি-কালার বা রেইনবো প্যালেট উদাহরণ:
+s1_id = s1_img.getMapId({
+    'min': -25, 
+    'max': 0, 
+    'palette': ['blue', 'cyan', 'green', 'yellow', 'red']
+})
                     folium.raster_layers.TileLayer(
                         tiles=s1_id['tile_fetcher'].url_format,
                         attr='Google Earth Engine',
